@@ -23,6 +23,7 @@ module.exports = function (objectrepository) {
     subtask.deadline = new Date(req.body.deadline);
     subtask.weight = req.body.weight;
     subtask.status = req.body.status;
+    subtask.groupDiscordId = res.locals.project.groupDiscordId;
     subtask.projectName = res.locals.project.name;
     subtask._project = res.locals.project._id;
     subtask.ownerDiscordId = req.body.ownerDiscordId;

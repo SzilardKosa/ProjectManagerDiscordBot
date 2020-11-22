@@ -99,22 +99,35 @@ module.exports = function (app) {
   );
 
   // Subtasks
-  app.get('/subtasks/:projectID', getProjectMW(objRepo), getSubtasksMW(objRepo));
   app.get(
-    '/subtasks/:projectID/:subtaskID',
+    '/subtasks/:groupID/:projectID',
+    getGroupMW(objRepo),
+    getProjectMW(objRepo),
+    getSubtasksMW(objRepo)
+  );
+  app.get(
+    '/subtasks/:groupID/:projectID/:subtaskID',
+    getGroupMW(objRepo),
     getProjectMW(objRepo),
     getSubtaskMW(objRepo),
     sendJsonMW(objRepo, 'subtask')
   );
-  app.post('/subtasks/:projectID', getProjectMW(objRepo), saveSubtaskMW(objRepo));
+  app.post(
+    '/subtasks/:groupID/:projectID',
+    getGroupMW(objRepo),
+    getProjectMW(objRepo),
+    saveSubtaskMW(objRepo)
+  );
   app.put(
-    '/subtasks/:projectID/:subtaskID',
+    '/subtasks/:groupID/:projectID/:subtaskID',
+    getGroupMW(objRepo),
     getProjectMW(objRepo),
     getSubtaskMW(objRepo),
     updateSubtaskMW(objRepo)
   );
   app.delete(
-    '/subtasks/:projectID/:subtaskID',
+    '/subtasks/:groupID/:projectID/:subtaskID',
+    getGroupMW(objRepo),
     getProjectMW(objRepo),
     getSubtaskMW(objRepo),
     deleteSubtaskMW(objRepo)

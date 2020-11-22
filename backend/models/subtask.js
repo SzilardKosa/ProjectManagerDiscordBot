@@ -6,6 +6,7 @@ const Subtask = db.model('Subtask', {
   deadline: Date,
   weight: Number,
   status: { type: Number, min: 0, max: 100 },
+  groupDiscordId: String,
   projectName: String,
   _project: {
     type: Schema.Types.ObjectId,

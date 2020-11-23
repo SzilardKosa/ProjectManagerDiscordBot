@@ -8,12 +8,13 @@ module.exports = function (objectrepository) {
   const MemberModel = requireOption(objectrepository, 'MemberModel');
 
   return function (req, res, next) {
-    if (typeof req.body.discordId === 'undefined') {
-      return next('discordId is undefined');
+    if (typeof req.body.discordId === 'undefined' || typeof req.body.userName === 'undefined') {
+      return next('one or more field is undefined');
     }
 
     let member = new MemberModel();
     member.discordId = req.body.discordId;
+    member.userName = req.body.userName;
     member._group = res.locals.group._id;
     member.groupDiscordId = res.locals.group.discordId;
 

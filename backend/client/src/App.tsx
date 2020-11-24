@@ -21,6 +21,15 @@ import GroupIcon from '@material-ui/icons/Group';
 import AppsIcon from '@material-ui/icons/Apps';
 import AssignmentIcon from '@material-ui/icons/Assignment';
 import MeetingRoomIcon from '@material-ui/icons/MeetingRoom';
+import 'fontsource-roboto';
+
+import { HashRouter as Router, Switch, Route, Redirect, NavLink } from 'react-router-dom';
+import ServerList from './pages/ServerList';
+import GroupList from './pages/GroupList';
+import MemberList from './pages/MemberList';
+import ProjectList from './pages/ProjectList';
+import SubtaskList from './pages/SubtaskList';
+import MeetingList from './pages/MeetingList';
 
 const drawerWidth = 240;
 
@@ -79,6 +88,13 @@ const useStyles = makeStyles((theme) => ({
     }),
     marginLeft: 0,
   },
+  link: {
+    textDecoration: 'none',
+    color: theme.palette.text.primary,
+  },
+  activeLink: {
+    color: theme.palette.secondary.main,
+  },
 }));
 
 export const App = () => {
@@ -95,6 +111,7 @@ export const App = () => {
   };
 
   const navItems = ['Servers', 'Groups', 'Members', 'Projects', 'Subtasks', 'Meetings'];
+  const navRoutes = ['/servers', '/groups', '/members', '/projects', '/subtasks', '/meetings'];
   const navIcons = [
     <StorageIcon />,
     <GroupWorkIcon />,
@@ -105,61 +122,76 @@ export const App = () => {
   ];
 
   const navList = navItems.map((text, index) => (
-    <ListItem button key={text}>
-      <ListItemIcon>{navIcons[index]}</ListItemIcon>
-      <ListItemText primary={text} />
-    </ListItem>
+    <NavLink to={navRoutes[index]} className={classes.link} activeClassName={classes.activeLink}>
+      <ListItem button key={text}>
+        <ListItemIcon>{navIcons[index]}</ListItemIcon>
+        <ListItemText primary={text} />
+      </ListItem>
+    </NavLink>
   ));
 
   return (
-    <div className={classes.root}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        className={clsx(classes.appBar, {
-          [classes.appBarShift]: open,
-        })}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            edge="start"
-            className={clsx(classes.menuButton, open && classes.hide)}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap>
-            Discord bot admin page
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        className={classes.drawer}
-        variant="persistent"
-        anchor="left"
-        open={open}
-        classes={{
-          paper: classes.drawerPaper,
-        }}
-      >
-        <div className={classes.drawerHeader}>
-          <IconButton onClick={handleDrawerClose}>
-            {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          </IconButton>
-        </div>
-        <Divider />
-        <List>{navList}</List>
-      </Drawer>
-      <main
-        className={clsx(classes.content, {
-          [classes.contentShift]: open,
-        })}
-      >
-        <div className={classes.drawerHeader} />
-        <Typography paragraph>Content</Typography>
-      </main>
-    </div>
+    <Router>
+      <div className={classes.root}>
+        <CssBaseline />
+        <AppBar
+          position="fixed"
+          className={clsx(classes.appBar, {
+            [classes.appBarShift]: open,
+          })}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              onClick={handleDrawerOpen}
+              edge="start"
+              className={clsx(classes.menuButton, open && classes.hide)}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" noWrap>
+              Discord bot admin page
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Drawer
+          className={classes.drawer}
+          variant="persistent"
+          anchor="left"
+          open={open}
+          classes={{
+            paper: classes.drawerPaper,
+          }}
+        >
+          <div className={classes.drawerHeader}>
+            <IconButton onClick={handleDrawerClose}>
+              {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+            </IconButton>
+          </div>
+          <Divider />
+          <List>{navList}</List>
+        </Drawer>
+        <main
+          className={clsx(classes.content, {
+            [classes.contentShift]: open,
+          })}
+        >
+          <div className={classes.drawerHeader} />
+
+          <Switch>
+            <Route exact path="/servers" component={ServerList} />
+            <Route exact path="/groups" component={GroupList} />
+            <Route exact path="/members" component={MemberList} />
+            <Route exact path="/projects" component={ProjectList} />
+            <Route exact path="/subtasks" component={SubtaskList} />
+            <Route exact path="/meetings" component={MeetingList} />
+            <Route exact path="/">
+              <Redirect to="/servers" />
+            </Route>
+          </Switch>
+        </main>
+      </div>
+    </Router>
   );
 };

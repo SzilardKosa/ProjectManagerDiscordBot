@@ -10,59 +10,75 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import Box from '@material-ui/core/Box';
+import Button from '@material-ui/core/Button';
+import CircularProgress from '@material-ui/core/CircularProgress';
+
+import { Link } from 'react-router-dom';
+import useDataApi from 'use-data-api';
 
 const useStyles = makeStyles({
   table: {
-    minWidth: 650,
+    minWidth: 200,
+    maxWidth: 400,
+  },
+  link: {
+    textDecoration: 'none',
+  },
+  box: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
-function createData(name: string, calories: number, fat: number, carbs: number, protein: number) {
-  return { name, calories, fat, carbs, protein };
+interface Server {
+  _id: string;
+  discordId: string;
 }
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];
 
 const ServerList = () => {
   const classes = useStyles();
+  const [{ data, isLoading, isError }] = useDataApi<Server[]>('/servers', []);
+
+  const rows = data?.map((server) => (
+    <TableRow key={server._id}>
+      <TableCell>{server.discordId}</TableCell>
+      <TableCell align="right">
+        <Link to={`/groups/${server._id}`} className={classes.link}>
+          <Button variant="contained" color="secondary">
+            View groups
+          </Button>
+        </Link>
+      </TableCell>
+    </TableRow>
+  ));
 
   return (
     <Container>
-      <Box paddingBottom={1}>
+      <Box paddingBottom={3}>
         <Typography variant="h4">Registered discord servers</Typography>
       </Box>
-      <TableContainer component={Paper}>
-        <Table className={classes.table} aria-label="simple table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Dessert (100g serving)</TableCell>
-              <TableCell align="right">Calories</TableCell>
-              <TableCell align="right">Fat&nbsp;(g)</TableCell>
-              <TableCell align="right">Carbs&nbsp;(g)</TableCell>
-              <TableCell align="right">Protein&nbsp;(g)</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.name}>
-                <TableCell component="th" scope="row">
-                  {row.name}
-                </TableCell>
-                <TableCell align="right">{row.calories}</TableCell>
-                <TableCell align="right">{row.fat}</TableCell>
-                <TableCell align="right">{row.carbs}</TableCell>
-                <TableCell align="right">{row.protein}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {isError && <div>Something went wrong ...</div>}
+      {isLoading ? (
+        <Box className={classes.box}>
+          <CircularProgress color="secondary" />
+        </Box>
+      ) : (
+        !isError && (
+          <TableContainer component={Paper} className={classes.table}>
+            <Table aria-label="simple table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Discord Id</TableCell>
+                  <TableCell align="right">Groups</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>{rows}</TableBody>
+            </Table>
+          </TableContainer>
+        )
+      )}
     </Container>
   );
 };

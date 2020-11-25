@@ -122,8 +122,13 @@ export const App = () => {
   ];
 
   const navList = navItems.map((text, index) => (
-    <NavLink to={navRoutes[index]} className={classes.link} activeClassName={classes.activeLink}>
-      <ListItem button key={text}>
+    <NavLink
+      key={text}
+      to={navRoutes[index]}
+      className={classes.link}
+      activeClassName={classes.activeLink}
+    >
+      <ListItem button>
         <ListItemIcon>{navIcons[index]}</ListItemIcon>
         <ListItemText primary={text} />
       </ListItem>
@@ -181,11 +186,11 @@ export const App = () => {
 
           <Switch>
             <Route exact path="/servers" component={ServerList} />
-            <Route exact path="/groups" component={GroupList} />
-            <Route exact path="/members" component={MemberList} />
-            <Route exact path="/projects" component={ProjectList} />
-            <Route exact path="/subtasks" component={SubtaskList} />
-            <Route exact path="/meetings" component={MeetingList} />
+            <Route path="/groups" component={GroupList} />
+            <Route path="/members" component={MemberList} />
+            <Route path="/projects" component={ProjectList} />
+            <Route path="/subtasks" component={SubtaskList} />
+            <Route path="/meetings" component={MeetingList} />
             <Route exact path="/">
               <Redirect to="/servers" />
             </Route>

@@ -271,7 +271,7 @@ function createMeeting(message, args, meetings) {
 	if(args.length >= 3) mg.setRepeat(args[2]);
 	mg._group = message.channel.id;
 	startMeeting(mg);
-	message.channel.send(`Message created with name: ${args[0]}, and date: ${args[1]}`);
+	message.channel.send(`Meeting created with name: ${args[0]}, and date: ${args[1]}`);
 	MeetingDbHandler.post(message.channel.id, mg);
 	return true;
 }
@@ -815,9 +815,13 @@ function startMeeting(meet) {
 	if(cronMeetings[meet._name] != null) cronMeetings[meet._name].destroy();
 
 	console.log(`${meet._name} meeting schedule is created`);
-	if(meet._repeat === '-1') {
+	if(Number(meet._repeat) === -1) {
 		cronMeetings[meet._name] = cron.schedule(`${a.getSeconds()} ${a.getMinutes()} ${a.getHours()} ${a.getDate()} ${a.getMonth() + 1} *`, () => {
 			client.channels.cache.find(channel => channel.id === meet._group).send(`${meet._name} meeting is started now.`);
+			MeetingDbHandler.del(meet._group, meet._name)
+				.then(console.log('del'))
+				.catch(error => {console.log(error.response.data);});
+			cronMeetings[meet._name].destroy();
 		});
 	}
 	else {
@@ -825,6 +829,7 @@ function startMeeting(meet) {
 			client.channels.cache.find(channel => channel.id === meet._group).send(`${meet._name} meeting is started now.`);
 
 			meet._date.setDate(a.getDate() + Number(meet._repeat));
+			MeetingDbHandler.put(meet._group, meet._name, meet);
 			startMeeting(meet);
 		});
 

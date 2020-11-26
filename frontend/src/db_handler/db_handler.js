@@ -147,8 +147,8 @@ class db_meeting {
 		return this._db_handler.get(`/meetings/${groupId}`);
 	}
 
-	del(groupId, meetingId) {
-		return this._db_handler.del(`/meetings/${groupId}/${meetingId}`);
+	del(groupId, meetingName) {
+		return this._db_handler.del(`/meetings/${groupId}/${meetingName}`);
 	}
 
 	post(groupId, meeting) {

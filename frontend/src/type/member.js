@@ -8,6 +8,7 @@ class Member {
 	toJson() {
 		return {
 			discordId: this._discordId,
+			userName: this._name,
 		};
 	}
 

@@ -11,7 +11,7 @@ const Server = require('./type/server.js');
 const Subtask = require('./type/subtask.js');
 const Group = require('./type/group.js');
 const Member = require('./type/member.js');
-
+const cron = require('node-cron');
 
 const ServerDbHandler = new db_server;
 const GroupDbHandler = new db_group;
@@ -19,6 +19,8 @@ const MemberDbHandler = new db_member;
 const ProjectDbHandler = new db_project;
 const SubtaskDbHandler = new db_sub_task;
 const MeetingDbHandler = new db_meeting;
+
+const cronMeetings = new Map();
 
 const client = new Client();
 
@@ -52,14 +54,14 @@ function registerMembers(message) {
 			for (const data of resp.data) {
 				members.push(new Member(data.discordId));
 			}
-
 			message.channel.members
 				.partition(member => !member.user.bot)[0]
 				.map(member => {
 					if(members.find(element => element._discordId == member.id) === undefined) {
-						MemberDbHandler.post(message.channel.id, member.user.id)
+						MemberDbHandler.post(message.channel.id, member.user.id, member.user.username)
 							.then(respons => console.log(`Post successfull /members/${message.channel.id}/${respons.data.discordId}`))
-							.catch(error => console.log(`Post failed /members/${message.channel.id}/${error.response.data.error.keyValue.discordId}`));
+							.catch(error => console.log(`${error.response.data.error.data.error.keyValue}`));
+						// console.log(`Post failed /members/${message.channel.id}/${error.response.data.error.keyValue}`
 					}
 				});
 		})
@@ -163,6 +165,7 @@ function modifyMeeting(message, args, meetings) {
 		message.channel.send(`Meeting has no property with name: ${args[1]}.`);
 		return false;
 	}
+	startMeeting(mg);
 	message.channel.send(`Meeting ${args[0]} property ${args[1]} successfully modified.`);
 	MeetingDbHandler.put(message.channel.id, args[0], mg);
 	return true;
@@ -266,7 +269,9 @@ function createMeeting(message, args, meetings) {
 	}
 	var mg = new Meeting(args[0], args[1]);
 	if(args.length >= 3) mg.setRepeat(args[2]);
-	message.channel.send(`Message created with name: ${args[0]}, and date: ${args[1]}`);
+	mg._group = message.channel.id;
+	startMeeting(mg);
+	message.channel.send(`Meeting created with name: ${args[0]}, and date: ${args[1]}`);
 	MeetingDbHandler.post(message.channel.id, mg);
 	return true;
 }
@@ -383,7 +388,7 @@ const methodManager = {
 					}
 					createMeeting(message, arg, meetings);
 				})
-				.catch(error => {console.log(error.response.data);});
+				.catch(error => {console.log(error);});
 			break;
 		default:
 			message.channel.send(`No such command ${CMD}`);
@@ -459,6 +464,7 @@ const methodManager = {
 					for (const data of resp.data) {
 						var meeting = new Meeting(data.name, new Date(data.date));
 						meeting.setRepeat(data.repeat);
+						meeting._group = data.groupDiscordId;
 						meetings.push(meeting);
 					}
 					modifyMeeting(message, arg, meetings);
@@ -476,7 +482,7 @@ const methodManager = {
 			ProjectDbHandler.get_all(message.channel.id)
 				.then(resp => {
 					var projects = [];
-					message.channel.send('Project name \t status \t number of subtasks \t deadline');
+					var mes = 'Project name \t status \t number of subtasks \t deadline';
 					for (const data of resp.data) {
 						var project = new Project(data.name);
 						project.setDeadline(new Date(data.deadline));
@@ -484,9 +490,14 @@ const methodManager = {
 						projects.push(project);
 						SubtaskDbHandler.get_all(message.channel.id, data.name)
 							.then(res => {
-								message.channel.send(`${data.name} \t ${data.status} \t ${res.data.length} \t ${data.deadline}`);
+								mes += `\n${data.name} \t ${data.status} \t ${res.data.length} \t ${data.deadline}`;
 							});
 					}
+					SubtaskDbHandler.get_all(message.channel.id, projects[0]._name)
+						.then(res => {
+							console.log(res);
+							message.channel.send(mes);
+						});
 				})
 				.catch(error => {console.log(error.response.data);});
 			break;
@@ -495,51 +506,64 @@ const methodManager = {
 				message.channel.send('Not enough argument given.');
 				return false;
 			}
-			ProjectDbHandler.get_all(message.channel.id)
-				.then(resp => {
-					var projects = [];
-					for (const data of resp.data) {
-						projects.push(new Project(data.name));
+			MemberDbHandler.get(message.channel.id)
+				.then(resm => {
+					var members = [];
+					for (const data of resm.data) {
+						var member = new Member(data.discordId);
+						member._name = data.userName;
+						members.push(member);
 					}
-
-					if(projects.find(project => project._name === arg[0]) === undefined) {
-						message.channel.send(`No project with name: ${arg[0]} exist.`);
-						return false;
-					}
-
-					SubtaskDbHandler.get_all(message.channel.id, arg[0])
-						.then(stResp => {
-							message.channel.send('Subtask name \t status \t weight \t assignedTo \t deadline');
-							var subtasks = [];
-							for (const data of stResp.data) {
-								subtasks.push(new Subtask(data.name, data.ownerDiscordId));
-								message.channel.send(`${data.name} \t  ${data.status} \t ${data.weight} \t ${client.users.cache.find(user => user.id === data.ownerDiscordId).username} \t ${data.deadline}`);
+					ProjectDbHandler.get_all(message.channel.id)
+						.then(resp => {
+							var projects = [];
+							for (const data of resp.data) {
+								projects.push(new Project(data.name));
 							}
+
+							if(projects.find(project => project._name === arg[0]) === undefined) {
+								message.channel.send(`No project with name: ${arg[0]} exist.`);
+								return false;
+							}
+
+							SubtaskDbHandler.get_all(message.channel.id, arg[0])
+								.then(stResp => {
+									var mes = 'Subtask name \t status \t weight \t assignedTo \t deadline';
+									var subtasks = [];
+									for (const data of stResp.data) {
+										subtasks.push(new Subtask(data.name, data.ownerDiscordId));
+										mes += `\n${data.name} \t  ${data.status} \t ${data.weight} \t ${members.find(memb => memb._discordId === data.ownerDiscordId)._name} \t ${data.deadline}`;
+									}
+									message.channel.send(mes);
+								})
+								.catch(error => {console.log(error);});
 						})
-						.catch(error => {console.log(error);});
+						.catch(error => {console.log(error.response.data);});
 				})
 				.catch(error => {console.log(error.response.data);});
+
 			break;
 		case 'meeting':
 			MeetingDbHandler.get_all(message.channel.id)
 				.then(resp => {
 					var meetings = [];
-					message.channel.send('Meeting name \t repeat \t date');
+					var mes = 'Meeting name \t repeat \t date';
 					for (const data of resp.data) {
 						meetings.push(new Meeting(data.name));
-						message.channel.send(`${data.name} \t ${data.repeat} \t ${data.date}`);
+						mes += `\n${data.name} \t ${data.repeat} \t ${data.date}`;
 					}
+					message.channel.send(mes);
 				})
 				.catch(error => {console.log(error.response.data);});
 			break;
 		case 'member':
-			console.log(client.guilds.cache.get('766620890704117761').members.cache);
 			MemberDbHandler.get(message.channel.id)
 				.then(resp => {
-					message.channel.send('Member name \t id');
+					var mes = 'Member name \t id';
 					for (const data of resp.data) {
-						message.channel.send(`${message.guild.members.cache.get(data.discordId).user.username} \t ${data.discordId}`);
+						mes += `\n${data.userName} \t ${data.discordId}`;
 					}
+					message.channel.send(mes);
 				})
 				.catch(error => {console.log(error);});
 			break;
@@ -620,6 +644,8 @@ const methodManager = {
 						message.channel.send(`Project with name: ${arg[0]} does not exist`);
 						return false;
 					}
+					console.log(`${arg[0]} meeting schedule is destryoyed()`);
+					cronMeetings[arg[0]].destroy();
 					MeetingDbHandler.del(message.channel.id, arg[0])
 						.then(message.channel.send(`Project ${arg[0]} is sucessfully deleted.`));
 				})
@@ -663,14 +689,7 @@ function getStatistic(message, args) {
 							var members = [];
 							for (const data of mResp.data) {
 								var member = new Member(data.discordId);
-								var usern = message.guild.members.cache.get(data.discordId);
-								// client.users.cache.find(user => user.id === data.discordId);
-								if(usern === undefined) {
-									member._name = 'UnKnown';
-								}
-								else {
-									member._name = usern.user.username;
-								}
+								member._name = data.userName;
 								members.push(member);
 							}
 							var weightSum = 0;
@@ -683,17 +702,31 @@ function getStatistic(message, args) {
 									a._done += subt._weight * subt._status / 100;
 								}
 							}
-							message.channel.send(`Statistics \n ${args[0]} - ${weightPSum / weightSum * 100}`);
+							var mesMemb = '';
+							var mesTask = '';
 							for(var subt2 of subtasks) {
-								message.channel.send(`st: \t ${subt2._name} -  Weight: ${subt2._weight} Status: ${subt2._status}`);
+								mesTask += `\nst: \t ${subt2._name} -  Weight: ${subt2._weight} Status: ${subt2._status}`;
 							}
 							for(var memb of members) {
 								if(weightPSum === 0) {
-									message.channel.send(`m: \t ${memb._name} -  ${memb._done / weightSum}: 100`);
+									mesMemb += `\n\t ${memb._name} -  ${memb._done / weightSum}: 100`;
 								}
 								else {
-									message.channel.send(`m: \t ${memb._name} -  ${memb._done / weightSum * 100} : ${memb._done / weightPSum * 100}`);
+									mesMemb += `\n     \t\t ${memb._name} -  ${memb._done / weightSum * 100} : ${memb._done / weightPSum * 100}`;
 								}
+							}
+							if(mesTask != '' && mesMemb != '') {
+								var embed = new MessageEmbed()
+								// Set the color of the embed
+									.setColor(0xff0000)
+								// Set the title of the field
+									.setAuthor('Statistics')
+								// Set the description.
+									.setTitle(`${args[0]} - ${weightPSum / weightSum * 100}`)
+									.addField('Subtasks:', mesTask)
+									.addField('Members:', mesMemb);
+								// Set the main content of the embed
+								message.channel.send(embed);
 							}
 						});
 				})
@@ -749,9 +782,83 @@ function updateSubtaskStatus(message, args) {
 		.catch(error => {console.log(error.response.data);});
 }
 
+function startMeetingSchedule(group) {
+	MeetingDbHandler.get_all(group._discordId)
+		.then(response => {
+			var meetings = [];
+			for(const meeting of response.data) {
+				var meet = new Meeting(meeting.name, new Date(meeting.date));
+				meet._repeat = meeting.repeat;
+				meet._group = meeting.groupDiscordId;
+				meetings.push(meet);
+				// ${a.getMinutes()} ${a.getHours()} ${a.getDate()} ${a.getMonth()}
+				startMeeting(meet);
+			}
+		})
+		.catch(error => {console.log(error);});
+}
+
+function startMeeting(meet) {
+	var currentTime = new Date();
+	var a = meet._date;
+	// || meet._date.getMonth() < currentTime.getMonth() || meet._date.getFullYear() < currentTime.getFullYear()
+	if(meet._repeat != -1 && (meet._date.getFullYear() < currentTime.getFullYear())) {
+		meet._date.setFullYear(currentTime.getFullYear());
+		startMeeting(meet);
+		return false;
+	}
+	if(meet._repeat != -1 && (meet._date.getTime() < currentTime.getTime())) {
+		meet._date.setDate(a.getDate() + Number(meet._repeat));
+		startMeeting(meet);
+		return false;
+	}
+	if(cronMeetings[meet._name] != null) cronMeetings[meet._name].destroy();
+
+	console.log(`${meet._name} meeting schedule is created`);
+	if(Number(meet._repeat) === -1) {
+		cronMeetings[meet._name] = cron.schedule(`${a.getSeconds()} ${a.getMinutes()} ${a.getHours()} ${a.getDate()} ${a.getMonth() + 1} *`, () => {
+			client.channels.cache.find(channel => channel.id === meet._group).send(`${meet._name} meeting is started now.`);
+			MeetingDbHandler.del(meet._group, meet._name)
+				.then(console.log('del'))
+				.catch(error => {console.log(error.response.data);});
+			cronMeetings[meet._name].destroy();
+		});
+	}
+	else {
+		cronMeetings[meet._name] = cron.schedule(`${a.getSeconds()} ${a.getMinutes()} ${a.getHours()} ${a.getDate()} ${a.getMonth() + 1} *`, () => {
+			client.channels.cache.find(channel => channel.id === meet._group).send(`${meet._name} meeting is started now.`);
+
+			meet._date.setDate(a.getDate() + Number(meet._repeat));
+			MeetingDbHandler.put(meet._group, meet._name, meet);
+			startMeeting(meet);
+		});
+
+	}
+}
+
+function scheduleMeeting() {
+	ServerDbHandler.get()
+		.then(serverResponse => {
+			for (const serverData of serverResponse.data) {
+				GroupDbHandler.get(serverData.discordId)
+					.then(groupResponse => {
+						for(const groupData of groupResponse.data) {
+							var group = new Group(groupData.discordId);
+							group._serverId = groupData.serverDiscordId;
+							startMeetingSchedule(group);
+						}
+					})
+					.catch(error => {console.log(error.response.data);});
+			}
+		})
+		.catch(error => {console.log(error.response.data);});
+}
+
+
 client.on('ready', () => {
 	registerServer();
 	console.log(`${client.user.tag} has loggged in.`);
+	scheduleMeeting();
 });
 
 client.on('message', (message) => {
@@ -782,23 +889,25 @@ client.on('message', (message) => {
 		// Set the color of the embed
 			.setColor(0xff0000)
 		// Set the main content of the embed
-			.setDescription(
-				'Command Prefix # \n\
-				register - register the group and all of its member.\n\
-				create project projectName {deadline}\n\
-				create subtask projectName subtaskName {deadline} {weight} {assignedTo}\n\
-				create meeting deadline {repeat}\n\
-				modify project projectName [name| deadline| status] value\n\
-				modify subtask projectName subtaskName [name| status| weight| deadline| assign] value\n\
-				modify meeting meetingName [name| date| repeat]\n\
-				delete [project| meeting| subtask] [projectName| meetingName| projectName] [ | | subtaskName]\n\
-				list [member| project| subtask| meeting] [ | | projectName| ]\n\
-				upd projectName subtaskName\n\
-				statistic projectName');
+			.addField('#register', 'Should be called by each member for registering.', false)
+			.addField('#create project', 'params:\n ProjectName\n {Deadline}', true)
+			.addField('#create subtask', 'params:\n ProjectName\n SubtaskName\n {Status, Weight, Deadline, AssignedPerson}', true)
+			.addField('#create meeting', 'params:\n MeetingName\n Date\n {Deadline}', true)
+			.addField('#modify project', 'params:\n ProjectName\n [name | deadline| status]\n Value', true)
+			.addField('#modify subtask', 'params:\n ProjectName\n SubtaskName\n [name | status| weight| deadline| assign] Value', true)
+			.addField('#modify meeting', 'params:\n MeetingName\n [name| date| repeat]\n Value', true)
+			.addField('#delete project', 'params:\n ProjectName', true)
+			.addField('#delete subtask', 'params:\n ProjectName\n SubtaskName', true)
+			.addField('#delete meeting', 'params:\n MeetingName', true)
+			.addField('#list project', 'params:\n ProjectName', true)
+			.addField('#list subtask', 'params:\n ProjectName\n SubtaskName', true)
+			.addField('#list meeting', 'params:\n MeetingName', true)
+			.addField('#update', 'params:\n ProjectName \nSubtaskName', false)
+			.addField('#statistic', 'params:\n ProjectName', false);
 		// Send the embed to the same channel as the message
 		message.channel.send(embed);
 		break;
-	case 'upd':
+	case 'update':
 		updateSubtaskStatus(message, args);
 		break;
 	case 'list':

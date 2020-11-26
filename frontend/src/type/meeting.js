@@ -3,6 +3,7 @@ class Meeting {
 		this._name = name;
 		this._date = new Date(date);
 		this._repeat = -1;
+		this._group = null;
 	}
 
 	changeName(name) {

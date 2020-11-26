@@ -77,8 +77,8 @@ class db_member {
 		return this._db_handler.del(`/members/${groupId}/${memberId}`);
 	}
 
-	post(groupId, memberId) {
-		return this._db_handler.post(`/members/${groupId}`, { discordId : memberId });
+	post(groupId, memberId, userName) {
+		return this._db_handler.post(`/members/${groupId}`, { discordId : memberId, userName : userName });
 	}
 }
 

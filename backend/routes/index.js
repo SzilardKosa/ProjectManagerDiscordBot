@@ -8,28 +8,33 @@ const saveServerMW = require('../middlewares/server/saveServerMW');
 const deleteGroupMW = require('../middlewares/group/deleteGroupMW');
 const getGroupMW = require('../middlewares/group/getGroupMW');
 const getGroupsMW = require('../middlewares/group/getGroupsMW');
+const getAllGroupsMW = require('../middlewares/group/getAllGroupsMW');
 const saveGroupMW = require('../middlewares/group/saveGroupMW');
 // Members
 const deleteMemberMW = require('../middlewares/member/deleteMemberMW');
 const getMemberMW = require('../middlewares/member/getMemberMW');
 const getMembersMW = require('../middlewares/member/getMembersMW');
+const getAllMembersMW = require('../middlewares/member/getAllMembersMW');
 const saveMemberMW = require('../middlewares/member/saveMemberMW');
 // Projects
 const deleteProjectMW = require('../middlewares/project/deleteProjectMW');
 const getProjectMW = require('../middlewares/project/getProjectMW');
 const getProjectsMW = require('../middlewares/project/getProjectsMW');
+const getAllProjectsMW = require('../middlewares/project/getAllProjectsMW');
 const saveProjectMW = require('../middlewares/project/saveProjectMW');
 const updateProjectMW = require('../middlewares/project/updateProjectMW');
 // Subtasks
 const deleteSubtaskMW = require('../middlewares/subtask/deleteSubtaskMW');
 const getSubtaskMW = require('../middlewares/subtask/getSubtaskMW');
 const getSubtasksMW = require('../middlewares/subtask/getSubtasksMW');
+const getAllSubtasksMW = require('../middlewares/subtask/getAllSubtasksMW');
 const saveSubtaskMW = require('../middlewares/subtask/saveSubtaskMW');
 const updateSubtaskMW = require('../middlewares/subtask/updateSubtaskMW');
 // Meetings
 const deleteMeetingMW = require('../middlewares/meeting/deleteMeetingMW');
 const getMeetingMW = require('../middlewares/meeting/getMeetingMW');
 const getMeetingsMW = require('../middlewares/meeting/getMeetingsMW');
+const getAllMeetingsMW = require('../middlewares/meeting/getAllMeetingsMW');
 const saveMeetingMW = require('../middlewares/meeting/saveMeetingMW');
 const updateMeetingMW = require('../middlewares/meeting/updateMeetingMW');
 
@@ -57,6 +62,7 @@ module.exports = function (app) {
   app.delete('/servers/:serverID', getServerMW(objRepo), deleteServerMW(objRepo));
 
   // Groups
+  app.get('/groups', getAllGroupsMW(objRepo));
   app.get('/groups/:serverID', getServerMW(objRepo), getGroupsMW(objRepo));
   app.post('/groups/:serverID', getServerMW(objRepo), saveGroupMW(objRepo));
   app.delete(
@@ -67,6 +73,7 @@ module.exports = function (app) {
   );
 
   // Members
+  app.get('/members', getAllMembersMW(objRepo));
   app.get('/members/:groupID', getGroupMW(objRepo), getMembersMW(objRepo));
   app.post('/members/:groupID', getGroupMW(objRepo), saveMemberMW(objRepo));
   app.delete(
@@ -77,6 +84,7 @@ module.exports = function (app) {
   );
 
   // Pojects
+  app.get('/projects', getAllProjectsMW(objRepo));
   app.get('/projects/:groupID', getGroupMW(objRepo), getProjectsMW(objRepo));
   app.get(
     '/projects/:groupID/:projectID',
@@ -99,6 +107,7 @@ module.exports = function (app) {
   );
 
   // Subtasks
+  app.get('/subtasks', getAllSubtasksMW(objRepo));
   app.get(
     '/subtasks/:groupID/:projectID',
     getGroupMW(objRepo),
@@ -134,6 +143,7 @@ module.exports = function (app) {
   );
 
   // Meetings
+  app.get('/meetings', getAllMeetingsMW(objRepo));
   app.get('/meetings/:groupID', getGroupMW(objRepo), getMeetingsMW(objRepo));
   app.get(
     '/meetings/:groupID/:meetingID',

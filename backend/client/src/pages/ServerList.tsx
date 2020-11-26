@@ -45,7 +45,7 @@ const ServerList = () => {
     <TableRow key={server._id}>
       <TableCell>{server.discordId}</TableCell>
       <TableCell align="right">
-        <Link to={`/groups/${server._id}`} className={classes.link}>
+        <Link to={`/groups/${server.discordId}`} className={classes.link}>
           <Button variant="contained" color="secondary">
             View groups
           </Button>
@@ -57,7 +57,7 @@ const ServerList = () => {
   return (
     <Container>
       <Box paddingBottom={3}>
-        <Typography variant="h4">Registered discord servers</Typography>
+        <Typography variant="h4">All registered discord servers</Typography>
       </Box>
       {isError && <div>Something went wrong ...</div>}
       {isLoading ? (

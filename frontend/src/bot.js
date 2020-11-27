@@ -119,6 +119,11 @@ function modifyProject(message, args, projects) {
 			message.channel.send(`Not valid project status: ${args[2]}.`);
 			return false;
 		}
+		if(args[2] === ('abandoned')) {
+			message.reply('Shall I get a broom then? Or would you reather continue crying over the shattered fragments of your young dreams?');
+			ProjectDbHandler.put(message.channel.id, args[0], pr);
+			return true;
+		}
 		break;
 	default:
 		message.channel.send(`Project has no property with name: ${args[1]}.`);
@@ -409,7 +414,7 @@ const methodManager = {
 					}
 					modifyProject(message, arg, projects);
 				})
-				.catch(error => {console.log(error.response.data);});
+				.catch(error => {console.log(error);});
 			break;
 		case 'subtask':
 			if(arg.length < 4) {
@@ -891,7 +896,7 @@ client.on('message', (message) => {
 		// Set the main content of the embed
 			.addField('#register', 'Should be called by each member for registering.', false)
 			.addField('#create project', 'params:\n ProjectName\n {Deadline}', true)
-			.addField('#create subtask', 'params:\n ProjectName\n SubtaskName\n {Status, Weight, Deadline, AssignedPerson}', true)
+			.addField('#create subtask', 'params:\n ProjectName\n SubtaskName\n {Deadline, Weight, AssignedPerson}', true)
 			.addField('#create meeting', 'params:\n MeetingName\n Date\n {Deadline}', true)
 			.addField('#modify project', 'params:\n ProjectName\n [name | deadline| status]\n Value', true)
 			.addField('#modify subtask', 'params:\n ProjectName\n SubtaskName\n [name | status| weight| deadline| assign] Value', true)
@@ -915,6 +920,9 @@ client.on('message', (message) => {
 		break;
 	case 'delete':
 		methodManager.delete(message, args);
+		break;
+	case 'fun':
+		message.reply('You start pretending to have fun, you might have a little by accident.');
 		break;
 	default:
 		message.channel.send(`No such command ${CMD_NAME}.`);

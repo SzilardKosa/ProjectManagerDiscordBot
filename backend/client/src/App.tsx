@@ -21,6 +21,7 @@ import GroupIcon from '@material-ui/icons/Group';
 import AppsIcon from '@material-ui/icons/Apps';
 import AssignmentIcon from '@material-ui/icons/Assignment';
 import MeetingRoomIcon from '@material-ui/icons/MeetingRoom';
+import Button from '@material-ui/core/Button';
 import 'fontsource-roboto';
 
 import { HashRouter as Router, Switch, Route, Redirect, NavLink } from 'react-router-dom';
@@ -175,7 +176,18 @@ export const App = () => {
             </IconButton>
           </div>
           <Divider />
-          <List>{navList}</List>
+          <List>
+            {navList}
+            <ListItem>
+              <Button
+                variant="contained"
+                color="secondary"
+                href="https://discord.com/oauth2/authorize?client_id=779648077291585536&scope=bot"
+              >
+                Registration link
+              </Button>
+            </ListItem>
+          </List>
         </Drawer>
         <main
           className={clsx(classes.content, {

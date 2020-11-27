@@ -2,7 +2,7 @@ const Schema = require('mongoose').Schema;
 const db = require('../config/db');
 
 const Member = db.model('Member', {
-  discordId: { type: String, unique: true },
+  discordId: String,
   groupDiscordId: String,
   userName: String,
   _group: {

@@ -182,7 +182,7 @@ export const App = () => {
               <Button
                 variant="contained"
                 color="secondary"
-                href="https://discord.com/oauth2/authorize?client_id=779648077291585536&scope=bot"
+                href={`https://discord.com/oauth2/authorize?client_id=${process.env.REACT_APP_DISCORD_CLIENT_ID}&scope=bot`}
               >
                 Registration link
               </Button>

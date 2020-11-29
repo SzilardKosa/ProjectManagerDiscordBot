@@ -19,6 +19,7 @@ class Meeting {
 
 	setRepeat(repeat) {
 		this._repeat = repeat;
+		return true;
 	}
 
 	toJson() {

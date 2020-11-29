@@ -498,13 +498,18 @@ const methodManager = {
 								mes += `\n${data.name} \t ${data.status} \t ${res.data.length} \t ${data.deadline}`;
 							});
 					}
-					SubtaskDbHandler.get_all(message.channel.id, projects[0]._name)
-						.then(res => {
-							console.log(res);
-							message.channel.send(mes);
-						});
+					if(projects.length > 0) {
+						SubtaskDbHandler.get_all(message.channel.id, projects[0]._name)
+							.then(res => {
+								console.log(res);
+								message.channel.send(mes);
+							});
+					}
+					else {
+						message.channel.send(mes);
+					}
 				})
-				.catch(error => {console.log(error.response.data);});
+				.catch(error => {console.log(error);});
 			break;
 		case 'subtask':
 			if(arg.length < 1) {
@@ -646,7 +651,7 @@ const methodManager = {
 						return false;
 					}
 					if((meetings.find(project => project._name === arg[0]) === undefined)) {
-						message.channel.send(`Project with name: ${arg[0]} does not exist`);
+						message.channel.send(`Meeting with name: ${arg[0]} does not exist`);
 						return false;
 					}
 					console.log(`${arg[0]} meeting schedule is destryoyed()`);
@@ -856,7 +861,7 @@ function scheduleMeeting() {
 					.catch(error => {console.log(error.response.data);});
 			}
 		})
-		.catch(error => {console.log(error.response.data);});
+		.catch(error => {console.log(error);});
 }
 
 
